@@ -6,7 +6,7 @@ license-file = "LICENSE.txt"
 description = "Toy RUSttp - aka Torus is a toy project synchronous http server library written with 0 dependencies"
 readme = "README.md"
 repository = "https://github.com/AfkaraLP/torus-http"
-documentation = "https://docs.rs/torus-http/0.1.0/torus-http"
+documentation = "https://docs.rs/torus-http"
 
 [dependencies]
 
