@@ -1,10 +1,9 @@
 //! The actual http server on which you define your routes
 use std::{
     collections::HashMap,
-    error::Error,
     io::{Read, Write},
     net::{TcpListener, ToSocketAddrs},
-    str::{FromStr, from_utf8},
+    str::{FromStr, Utf8Error, from_utf8},
 };
 
 use crate::{method::HttpMethod, request::Request, response::Response};
@@ -224,33 +223,55 @@ where
     /// - Failed getting the stream
     /// - Failed parsing the request
     /// - Failed flushing to the stream
-    pub fn run(&self) -> Result<(), Box<dyn Error>> {
+    pub fn run(&self) -> Result<(), ServerError> {
         let listener = TcpListener::bind(self.address.clone())?;
         loop {
-            let (mut stream, _) = listener.accept()?;
-            // TODO: handle differently as this can probably easily overflow
-            let mut buf = [0; 4096];
-
-            let n = stream.read(&mut buf)?;
-            let request = {
-                let request = Request::from_str(from_utf8(&buf[..n])?)?;
-                if let Some(middle_ware) = self.middle_ware {
-                    middle_ware(request)
-                } else {
-                    request
-                }
-            };
-            let path = request.path.clone();
-            let method = request.method.clone();
-            // TODO: handle this error
-            let _write_success = if let Some(intercept) = self.handlers.get(&(path, method)) {
-                let ret = intercept.call(request);
-                stream.write_all(ret.to_response().into_bytes().as_slice())
-            } else {
-                stream.write_all(&"no method found".to_response().into_bytes())
-            };
-
-            stream.flush()?;
+            for stream in listener.incoming() {
+                let stream = stream?;
+                // let (mut stream, _) = listener.accept()?;
+                // TODO: handle differently as this can probably easily overflow
+                self.handle_connection(stream)?;
+            }
         }
+    }
+
+    fn handle_connection(&self, mut stream: std::net::TcpStream) -> Result<(), ServerError> {
+        let mut buf = [0; 4096 * 4];
+        let n = stream.read(&mut buf)?;
+        let request = {
+            let request = Request::from_str(from_utf8(&buf[..n])?)?;
+            if let Some(middle_ware) = self.middle_ware {
+                middle_ware(request)
+            } else {
+                request
+            }
+        };
+        let path = request.path.clone();
+        let method = request.method.clone();
+        let _write_success = if let Some(intercept) = self.handlers.get(&(path, method)) {
+            let ret = intercept.call(request);
+            stream.write_all(ret.to_response().into_bytes().as_slice())
+        } else {
+            stream.write_all(&"no method found".to_response().into_bytes())
+        };
+        stream.flush()?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ServerError {
+    Utf8Conversion(Utf8Error),
+    IoError,
+}
+
+impl From<Utf8Error> for ServerError {
+    fn from(value: Utf8Error) -> Self {
+        Self::Utf8Conversion(value)
+    }
+}
+impl From<std::io::Error> for ServerError {
+    fn from(_value: std::io::Error) -> Self {
+        Self::IoError
     }
 }
