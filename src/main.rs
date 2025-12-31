@@ -17,4 +17,11 @@ fn main() {
 }
 
 #[must_use]
-pub fn hello_world(req: Request) -> impl Response {}
+pub fn hello_world(req: Request) -> impl Response {
+    HttpResponse::new()
+        .set_body(format!(
+            "<h1>hey there from me</h1><p>this is a test, your headers are: {:#?}</p>",
+            req.headers
+        ))
+        .insert_header("Content-Type", "text/html")
+}

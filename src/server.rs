@@ -228,21 +228,18 @@ where
         let listener = TcpListener::bind(self.address.clone())?;
         let server = Arc::new(self);
         loop {
-            let server = server.clone();
             for stream in listener.incoming() {
                 let server = server.clone();
                 let stream = stream?;
-                // let (mut stream, _) = listener.accept()?;
-                // TODO: handle differently as this can probably easily overflow
                 std::thread::spawn(move || {
-                    _ = Self::handle_connection(server, stream);
+                    _ = Self::handle_connection(&server, stream);
                 });
             }
         }
     }
 
     fn handle_connection(
-        server: Arc<HttpServer<Addr>>,
+        server: &Arc<HttpServer<Addr>>,
         mut stream: std::net::TcpStream,
     ) -> Result<(), ServerError> {
         let mut buf = [0; 4096 * 4];
@@ -263,7 +260,6 @@ where
         } else {
             stream.write_all(&"no method found".to_response().into_bytes())
         };
-        // stream.flush()?;
         Ok(())
     }
 }

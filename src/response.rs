@@ -23,6 +23,13 @@ impl<T: AsRef<str>> Response for T {
     }
 }
 
+impl Response for HttpResponse {
+    // TODO: make this not need to clone, can't just take ownership since dyn
+    fn to_response(&self) -> HttpResponse {
+        self.clone()
+    }
+}
+
 /// Struct that contains all the information that will be sent to the client
 #[derive(Eq, PartialEq, Clone, Debug, Default)]
 pub struct HttpResponse {
