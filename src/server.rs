@@ -4,12 +4,13 @@ use std::{
     io::{Read, Write},
     net::{TcpListener, ToSocketAddrs},
     str::{FromStr, Utf8Error, from_utf8},
+    sync::Arc,
 };
 
 use crate::{method::HttpMethod, request::Request, response::Response};
 
 type BoxedResponse = Box<dyn Response>;
-type Handler = Box<dyn HandlerFn>;
+type Handler = Box<dyn HandlerFn + Send + Sync>;
 
 /// The struct to initialise your http server and finally listen on some port
 ///
@@ -20,7 +21,7 @@ type Handler = Box<dyn HandlerFn>;
 /// ```
 pub struct HttpServer<A>
 where
-    A: ToSocketAddrs + Clone,
+    A: ToSocketAddrs,
 {
     address: A,
     handlers: HashMap<(String, HttpMethod), Handler>,
@@ -28,13 +29,13 @@ where
 }
 
 /// A generic trait to allow many different types of handlers to be passed into our http server
-pub trait HandlerFn {
+pub trait HandlerFn: Send + Sync {
     fn call(&self, req: Request) -> BoxedResponse;
 }
 
 impl<F, T> HandlerFn for F
 where
-    F: Fn(Request) -> T,
+    F: Fn(Request) -> T + Send + Sync,
     T: Response + 'static,
 {
     fn call(&self, req: Request) -> BoxedResponse {
@@ -44,7 +45,7 @@ where
 
 impl<Addr> HttpServer<Addr>
 where
-    Addr: ToSocketAddrs + Clone,
+    Addr: ToSocketAddrs + Clone + Send + Sync + 'static,
 {
     /// Initialise an http server on an address
     pub fn new(address: Addr) -> Self {
@@ -223,24 +224,32 @@ where
     /// - Failed getting the stream
     /// - Failed parsing the request
     /// - Failed flushing to the stream
-    pub fn run(&self) -> Result<(), ServerError> {
+    pub fn run(self) -> Result<(), ServerError> {
         let listener = TcpListener::bind(self.address.clone())?;
+        let server = Arc::new(self);
         loop {
+            let server = server.clone();
             for stream in listener.incoming() {
+                let server = server.clone();
                 let stream = stream?;
                 // let (mut stream, _) = listener.accept()?;
                 // TODO: handle differently as this can probably easily overflow
-                self.handle_connection(stream)?;
+                std::thread::spawn(move || {
+                    _ = Self::handle_connection(server, stream);
+                });
             }
         }
     }
 
-    fn handle_connection(&self, mut stream: std::net::TcpStream) -> Result<(), ServerError> {
+    fn handle_connection(
+        server: Arc<HttpServer<Addr>>,
+        mut stream: std::net::TcpStream,
+    ) -> Result<(), ServerError> {
         let mut buf = [0; 4096 * 4];
         let n = stream.read(&mut buf)?;
         let request = {
             let request = Request::from_str(from_utf8(&buf[..n])?)?;
-            if let Some(middle_ware) = self.middle_ware {
+            if let Some(middle_ware) = server.middle_ware {
                 middle_ware(request)
             } else {
                 request
@@ -248,7 +257,7 @@ where
         };
         let path = request.path.clone();
         let method = request.method.clone();
-        let _write_success = if let Some(intercept) = self.handlers.get(&(path, method)) {
+        let _write_success = if let Some(intercept) = server.handlers.get(&(path, method)) {
             let ret = intercept.call(request);
             stream.write_all(ret.to_response().into_bytes().as_slice())
         } else {
