@@ -1,4 +1,4 @@
-use toy_rusttp::prelude::*;
+use torus_http::prelude::*;
 
 fn main() {
     let server: HttpServer<_> = HttpServer::new(("127.0.0.1", 8080))
