@@ -1,4 +1,4 @@
-# Toy RUSttp
+# TOy RUSttp
 
 TORUS is a small, synchronous HTTP server written in Rust (by the way).
 
