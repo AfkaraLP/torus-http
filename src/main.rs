@@ -1,4 +1,4 @@
-use torus_http::prelude::*;
+use torus_http::{prelude::*, response::HttpResponse};
 
 fn main() {
     let server: HttpServer<_> = HttpServer::new(("127.0.0.1", 8080))
@@ -17,9 +17,4 @@ fn main() {
 }
 
 #[must_use]
-pub fn hello_world(req: Request) -> impl Response {
-    format!(
-        "hello, kind world... I will now proceed to print your headers: {:#?}",
-        req.headers
-    )
-}
+pub fn hello_world(req: Request) -> impl Response {}

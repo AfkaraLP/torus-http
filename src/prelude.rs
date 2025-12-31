@@ -1,5 +1,6 @@
 //! Re-export of the common things required for making a rudimentary http server
 pub use crate::method::HttpMethod;
 pub use crate::request::Request;
-pub use crate::response::Response;
-pub use crate::server::HttpServer;
+pub use crate::response::*;
+pub use crate::server::{HttpServer, ServerError};
+pub use crate::status::HttpStatus;

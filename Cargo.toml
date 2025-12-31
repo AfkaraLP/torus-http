@@ -1,6 +1,6 @@
 [package]
 name = "torus-http"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 license-file = "LICENSE.txt"
 description = "Toy RUSttp - aka Torus is a toy project synchronous http server library written with 0 dependencies"
