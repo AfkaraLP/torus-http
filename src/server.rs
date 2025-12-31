@@ -263,15 +263,15 @@ where
         } else {
             stream.write_all(&"no method found".to_response().into_bytes())
         };
-        stream.flush()?;
+        // stream.flush()?;
         Ok(())
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug)]
 pub enum ServerError {
     Utf8Conversion(Utf8Error),
-    IoError,
+    IoError(std::io::Error),
 }
 
 impl From<Utf8Error> for ServerError {
@@ -280,7 +280,7 @@ impl From<Utf8Error> for ServerError {
     }
 }
 impl From<std::io::Error> for ServerError {
-    fn from(_value: std::io::Error) -> Self {
-        Self::IoError
+    fn from(value: std::io::Error) -> Self {
+        Self::IoError(value)
     }
 }

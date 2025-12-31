@@ -13,7 +13,7 @@ fn main() {
             req
         });
 
-    _ = server.run();
+    server.run().unwrap();
 }
 
 #[must_use]
