@@ -1,14 +1,17 @@
+use std::fmt::Display;
+
 // TODO: yeah fill this out should not take long but too lazy rn
 #[non_exhaustive]
-#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
+#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, Debug, Default)]
 pub enum HttpStatus {
+    #[default]
     Ok = 200,
 }
 
-impl ToString for HttpStatus {
-    fn to_string(&self) -> String {
+impl Display for HttpStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            HttpStatus::Ok => "200 OK".into(),
+            HttpStatus::Ok => write!(f, "200 OK"),
         }
     }
 }

@@ -67,6 +67,7 @@ where
     ///     req
     /// })
     /// ```
+    #[must_use]
     pub fn add_middleware(mut self, f: fn(req: Request) -> Request) -> Self {
         self.middle_ware.replace(f);
         self
@@ -79,6 +80,7 @@ where
     /// ```rust
     /// HttpServer::new(("127.0.0.1", 8080)).route("/some_path", HttpMethod::Other("custom"), |_| {"hi"})
     /// ```
+    #[must_use]
     pub fn route<F: HandlerFn + 'static>(
         mut self,
         path: impl Into<String>,
@@ -103,6 +105,7 @@ where
     /// ## Note:
     ///
     /// I drop the body for get requests as that is apparently standard
+    #[must_use]
     pub fn get<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
         self.route(path, HttpMethod::Get, f)
     }
@@ -118,6 +121,7 @@ where
     /// }
     /// HttpServer::new(("127.0.0.1", 8080)).post("/drop/prod/db", my_post)
     /// ```
+    #[must_use]
     pub fn post<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
         self.route(path, HttpMethod::Post, f)
     }
@@ -133,6 +137,7 @@ where
     /// }
     /// HttpServer::new(("127.0.0.1", 8080)).delete("/homework", my_delete)
     /// ```
+    #[must_use]
     pub fn delete<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
         self.route(path, HttpMethod::Delete, f)
     }
@@ -148,6 +153,7 @@ where
     /// }
     /// HttpServer::new(("127.0.0.1", 8080)).delete("/homework", im_getting_tired_of_writing_these)
     /// ```
+    #[must_use]
     pub fn update<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
         self.route(path, HttpMethod::Update, f)
     }
@@ -162,17 +168,20 @@ where
     /// }
     /// HttpServer::new(("127.0.0.1", 8080)).delete("/us-east1", im_getting_tired_of_writing_these)
     /// ```
+    #[must_use]
     pub fn put<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
         self.route(path, HttpMethod::Put, f)
     }
 
-    /// like .post() but patch
+    /// like `.post()` but patch
+    #[must_use]
     pub fn patch<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
         self.route(path, HttpMethod::Patch, f)
     }
 
     /// I just took this one from hoppscotch I never heard of the head method before
-    /// read .post() and stuff for documentation
+    /// read `.post()` and stuff for documentation
+    #[must_use]
     pub fn head<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
         self.route(path, HttpMethod::Head, f)
     }
@@ -200,11 +209,20 @@ where
     /// allowed methods and behaviors. A response body is usually unnecessary and
     /// often ignored, but nothing is stopping you from adding one if you enjoy
     /// disappointing strict HTTP purists.
+    #[must_use]
     pub fn options<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
         self.route(path, HttpMethod::Options, f)
     }
 
     /// Start your http server
+    ///
+    /// # Errors
+    ///
+    /// - Failed binding listener to address
+    /// - Failed reading the stream to the buffer
+    /// - Failed getting the stream
+    /// - Failed parsing the request
+    /// - Failed flushing to the stream
     pub fn run(&self) -> Result<(), Box<dyn Error>> {
         let listener = TcpListener::bind(self.address.clone())?;
         loop {
@@ -224,11 +242,11 @@ where
             let path = request.path.clone();
             let method = request.method.clone();
             // TODO: handle this error
-            let write_success = if let Some(intercept) = self.handlers.get(&(path, method)) {
+            let _write_success = if let Some(intercept) = self.handlers.get(&(path, method)) {
                 let ret = intercept.call(request);
-                stream.write_all(ret.into_response().into_bytes().as_slice())
+                stream.write_all(ret.to_response().into_bytes().as_slice())
             } else {
-                stream.write_all(&"no method found".into_response().into_bytes())
+                stream.write_all(&"no method found".to_response().into_bytes())
             };
 
             stream.flush()?;

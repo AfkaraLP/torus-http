@@ -32,7 +32,9 @@ impl FromStr for Request {
             .split_whitespace()
             .collect::<Vec<&str>>();
         let (method, path): (HttpMethod, String) = match first_line.as_slice() {
-            [method_str, path, _version] => (HttpMethod::from_str(&method_str), path.to_string()),
+            [method_str, path, _version] => {
+                (HttpMethod::from_str_val(method_str), (*path).to_string())
+            }
             _ => {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
@@ -51,12 +53,12 @@ impl FromStr for Request {
             })
             .collect();
 
-        let body = if method != HttpMethod::Get {
+        let body = if method == HttpMethod::Get {
+            None
+        } else {
             s.split_once("\r\n\r\n")
                 .map(|v| v.1.to_owned())
                 .filter(|v| !v.is_empty())
-        } else {
-            None
         };
 
         let req: Request = Request {

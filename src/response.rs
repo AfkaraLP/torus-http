@@ -14,17 +14,17 @@ use crate::status::HttpStatus;
 
 /// Trait that allows things to be sent back from the server
 pub trait Response {
-    fn into_response(&self) -> HttpResponse;
+    fn to_response(&self) -> HttpResponse;
 }
 
-impl<'a, T: AsRef<str>> Response for T {
-    fn into_response(&self) -> HttpResponse {
+impl<T: AsRef<str>> Response for T {
+    fn to_response(&self) -> HttpResponse {
         HttpResponse::new().set_body(self.as_ref())
     }
 }
 
 /// Struct that contains all the information that will be sent to the client
-#[derive(Eq, PartialEq, Clone, Debug)]
+#[derive(Eq, PartialEq, Clone, Debug, Default)]
 pub struct HttpResponse {
     pub headers: HashMap<String, String>,
     pub status: HttpStatus,
@@ -32,6 +32,7 @@ pub struct HttpResponse {
 }
 
 impl HttpResponse {
+    #[must_use]
     pub fn new_body(body: String, status: HttpStatus) -> Self {
         let mut headers: HashMap<String, String> = HashMap::new();
         headers.insert("Content-Length".into(), body.chars().count().to_string());
@@ -42,11 +43,13 @@ impl HttpResponse {
         }
     }
 
+    #[must_use]
     pub fn insert_header(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.headers.insert(key.into(), value.into());
         self
     }
 
+    #[must_use]
     pub fn set_body(mut self, body: impl Into<String>) -> Self {
         let body = body.into();
         let body_len = body.chars().count();
@@ -56,11 +59,13 @@ impl HttpResponse {
         self
     }
 
+    #[must_use]
     pub fn set_status(mut self, status: HttpStatus) -> Self {
         self.status = status;
         self
     }
 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             headers: HashMap::new(),
@@ -74,15 +79,17 @@ impl HttpResponse {
     }
 
     pub(crate) fn into_string(self) -> String {
-        let headers = self
-            .headers
-            .iter()
-            .map(|(k, v)| format!("{k}: {v}\r\n"))
-            .collect::<String>();
+        use std::fmt::Write;
+
+        let headers = self.headers.iter().fold(String::new(), |mut acc, (k, v)| {
+            acc.write_fmt(core::format_args!("{k}: {v}\r\n"))
+                .expect("if this fails fuck clippy");
+            acc
+        });
 
         format!(
             "HTTP/1.1 {}\r\n{headers}\r\n{}",
-            self.status.to_string(),
+            self.status,
             self.body.unwrap_or_default()
         )
     }

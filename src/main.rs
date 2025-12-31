@@ -16,6 +16,7 @@ fn main() {
     _ = server.run();
 }
 
+#[must_use]
 pub fn hello_world(req: Request) -> impl Response {
     format!(
         "hello, kind world... I will now proceed to print your headers: {:#?}",

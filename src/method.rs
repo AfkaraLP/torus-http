@@ -15,7 +15,8 @@
 //! ```
 
 impl HttpMethod {
-    pub fn from_str(s: &str) -> Self {
+    #[must_use]
+    pub fn from_str_val(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "get" => HttpMethod::Get,
             "post" => HttpMethod::Post,
