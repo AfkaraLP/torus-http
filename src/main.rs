@@ -1,7 +1,7 @@
 use torus_http::{prelude::*, response::HttpResponse};
 
 fn main() {
-    let server: HttpServer<_> = HttpServer::new(("127.0.0.1", 8080))
+    let server: HttpServer = HttpServer::new()
         .get("/", hello_world)
         .route(
             "/hello",
@@ -13,7 +13,7 @@ fn main() {
             req
         });
 
-    server.run().unwrap();
+    server.listen(("127.0.0.1", 8080)).unwrap();
 }
 
 #[must_use]

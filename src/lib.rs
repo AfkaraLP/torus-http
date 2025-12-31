@@ -9,7 +9,7 @@
 //! use toy_rusttp::prelude::*;
 //!
 //! fn main() {
-//!     let server: HttpServer<_> = HttpServer::new(("127.0.0.1", 8080))
+//!     let server: HttpServer = HttpServer::new()
 //!         .get("/", hello_world)
 //!         .route(
 //!             "/hello",
@@ -21,7 +21,7 @@
 //!             req
 //!         });
 //!
-//!     _ = server.run();
+//!     _ = server.listen(("127.0.0.1", 8080));
 //! }
 //!
 //! pub fn hello_world(req: Request) -> impl Response {

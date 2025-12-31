@@ -17,13 +17,9 @@ type Handler = Box<dyn HandlerFn + Send + Sync>;
 /// # Example usage:
 ///
 /// ```rust
-/// HttpServer::new(("127.0.0.1", 8080)).run() // no_op http server listening on port 8080
+/// HttpServer::new().listen(("127.0.0.1", 8080)) // no_op http server listening on port 8080
 /// ```
-pub struct HttpServer<A>
-where
-    A: ToSocketAddrs,
-{
-    address: A,
+pub struct HttpServer {
     handlers: HashMap<(String, HttpMethod), Handler>,
     middle_ware: Option<fn(req: Request) -> Request>,
 }
@@ -43,14 +39,11 @@ where
     }
 }
 
-impl<Addr> HttpServer<Addr>
-where
-    Addr: ToSocketAddrs + Clone + Send + Sync + 'static,
-{
+impl HttpServer {
     /// Initialise an http server on an address
-    pub fn new(address: Addr) -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
-            address,
             handlers: HashMap::new(),
             middle_ware: None,
         }
@@ -63,7 +56,7 @@ where
     /// # Example usage:
     ///
     /// ```rust
-    /// HttpServer::new(("127.0.0.1", 8080)).add_middleware(|req| {
+    /// HttpServer::new().add_middleware(|req| {
     ///     println!("we got request: {req:#?}");
     ///     req
     /// })
@@ -79,7 +72,7 @@ where
     /// # Example usage:
     ///
     /// ```rust
-    /// HttpServer::new(("127.0.0.1", 8080)).route("/some_path", HttpMethod::Other("custom"), |_| {"hi"})
+    /// HttpServer::new().route("/some_path", HttpMethod::Other("custom"), |_| {"hi"})
     /// ```
     #[must_use]
     pub fn route<F: HandlerFn + 'static>(
@@ -100,7 +93,7 @@ where
     /// fn home_method(_req: HttpRequest) -> impl Response {
     ///     "hello, world"
     /// }
-    /// HttpServer::new(("127.0.0.1", 8080)).get("/home", )
+    /// HttpServer::new().get("/home", )
     /// ```
     ///
     /// ## Note:
@@ -120,7 +113,7 @@ where
     ///     // ... Super complex DB activity
     ///     "I'll keep you posted"
     /// }
-    /// HttpServer::new(("127.0.0.1", 8080)).post("/drop/prod/db", my_post)
+    /// HttpServer::new().post("/drop/prod/db", my_post)
     /// ```
     #[must_use]
     pub fn post<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
@@ -136,7 +129,7 @@ where
     ///     // delete browser history ...
     ///     "Yeah I don't use the internet bro trust me..."
     /// }
-    /// HttpServer::new(("127.0.0.1", 8080)).delete("/homework", my_delete)
+    /// HttpServer::new().delete("/homework", my_delete)
     /// ```
     #[must_use]
     pub fn delete<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
@@ -152,7 +145,7 @@ where
     ///     // just read the others like .get() and .post() bro
     ///     "Yeah I don't use the internet bro trust me..."
     /// }
-    /// HttpServer::new(("127.0.0.1", 8080)).delete("/homework", im_getting_tired_of_writing_these)
+    /// HttpServer::new().delete("/homework", im_getting_tired_of_writing_these)
     /// ```
     #[must_use]
     pub fn update<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
@@ -167,7 +160,7 @@ where
     /// fn im_getting_tired_of_writing_these(_req: HttpRequest) -> impl Response {
     ///     "WHY THE HECK DID I ADD SO MANY OF THESE THINGS"
     /// }
-    /// HttpServer::new(("127.0.0.1", 8080)).delete("/us-east1", im_getting_tired_of_writing_these)
+    /// HttpServer::new().delete("/us-east1", im_getting_tired_of_writing_these)
     /// ```
     #[must_use]
     pub fn put<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
@@ -201,7 +194,7 @@ where
     ///     ""
     /// }
     ///
-    /// HttpServer::new(("127.0.0.1", 8080)).options("/home", options_method);
+    /// HttpServer::new().options("/home", options_method);
     /// ```
     ///
     /// ## Note:
@@ -224,8 +217,8 @@ where
     /// - Failed getting the stream
     /// - Failed parsing the request
     /// - Failed flushing to the stream
-    pub fn run(self) -> Result<(), ServerError> {
-        let listener = TcpListener::bind(self.address.clone())?;
+    pub fn listen(self, address: impl ToSocketAddrs) -> Result<(), ServerError> {
+        let listener = TcpListener::bind(address)?;
         let server = Arc::new(self);
         loop {
             for stream in listener.incoming() {
@@ -239,7 +232,7 @@ where
     }
 
     fn handle_connection(
-        server: &Arc<HttpServer<Addr>>,
+        server: &Arc<HttpServer>,
         mut stream: std::net::TcpStream,
     ) -> Result<(), ServerError> {
         let mut buf = [0; 4096 * 4];
