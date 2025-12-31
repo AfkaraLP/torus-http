@@ -1,3 +1,4 @@
+//! Http status wrapper
 use std::fmt::Display;
 
 // TODO: yeah fill this out should not take long but too lazy rn

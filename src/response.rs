@@ -1,4 +1,4 @@
-//! Exports a trait for generating HTTP responses, with a simple default
+//! Exports a trait for generating http responses, with a simple default
 //! implementation for string bodies.
 //!
 //! # Example:

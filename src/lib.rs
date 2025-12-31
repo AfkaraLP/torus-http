@@ -1,6 +1,6 @@
 //! # toy-rusttp
 //!
-//! A small, synchronous HTTP server library with a surprisingly pleasant
+//! A small, synchronous http server library with a surprisingly pleasant
 //! developer experience and minimal moving parts.
 //!
 //! ## Example usage:

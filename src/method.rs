@@ -15,6 +15,7 @@
 //! ```
 
 impl HttpMethod {
+    /// Generate an http method from a string
     #[must_use]
     pub fn from_str_val(s: &str) -> Self {
         match s.to_lowercase().as_str() {

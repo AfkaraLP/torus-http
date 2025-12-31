@@ -1,3 +1,4 @@
+//! The actual http server on which you define your routes
 use std::{
     collections::HashMap,
     error::Error,
@@ -189,7 +190,7 @@ where
     /// Shoutout to chatgpt for this one:
     /// Register an **OPTIONS** method
     ///
-    /// This attaches a handler to the given path that responds to HTTP `OPTIONS`
+    /// This attaches a handler to the given path that responds to http `OPTIONS`
     /// requests. Typically used for capability discovery, CORS preflight checks,
     /// or politely telling browsers what they are allowed to do.
     ///
