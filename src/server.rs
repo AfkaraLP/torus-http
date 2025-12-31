@@ -12,18 +12,6 @@ use crate::{method::HttpMethod, request::Request, response::Response};
 type BoxedResponse = Box<dyn Response>;
 type Handler = Box<dyn HandlerFn + Send + Sync>;
 
-/// The struct to initialise your http server and finally listen on some port
-///
-/// # Example usage:
-///
-/// ```rust
-/// HttpServer::new().listen(("127.0.0.1", 8080)) // no_op http server listening on port 8080
-/// ```
-pub struct HttpServer {
-    handlers: HashMap<(String, HttpMethod), Handler>,
-    middle_ware: Option<fn(req: Request) -> Request>,
-}
-
 /// A generic trait to allow many different types of handlers to be passed into our http server
 pub trait HandlerFn: Send + Sync {
     fn call(&self, req: Request) -> BoxedResponse;
@@ -37,6 +25,19 @@ where
     fn call(&self, req: Request) -> BoxedResponse {
         Box::new(self(req))
     }
+}
+
+/// The struct to initialise your http server and finally listen on some port
+///
+/// # Example usage:
+///
+/// ```rust
+/// HttpServer::new().listen(("127.0.0.1", 8080)) // no_op http server listening on port 8080
+/// ```
+#[derive(Default)]
+pub struct HttpServer {
+    handlers: HashMap<(String, HttpMethod), Handler>,
+    middle_ware: Option<fn(req: Request) -> Request>,
 }
 
 impl HttpServer {

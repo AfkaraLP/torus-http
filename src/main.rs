@@ -1,4 +1,4 @@
-use torus_http::{prelude::*, response::HttpResponse};
+use torus_http::prelude::*;
 
 fn main() {
     let server: HttpServer = HttpServer::new()
