@@ -44,13 +44,16 @@ fn main() {
             req
         });
 
-    _ = server.listen(("127.0.0.1", 8080));
+    server
+        .listen(("127.0.0.1", 8080))
+        .expect("Failed listening...");
 }
 
 pub fn hello_world(req: Request) -> impl Response {
-    format!(
-        "hello, kind world... I will now proceed to print your headers: {:#?}",
-        req.headers
-    )
+    HttpResponse::new()
+        .set_body(format!(
+            "<h1>hey there from torus!</h1><p>this is a test, your request is: {req:#?}</p>",
+        ))
+        .insert_header("Content-Type", "text/html")
 }
 ```

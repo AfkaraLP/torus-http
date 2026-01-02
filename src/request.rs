@@ -1,6 +1,4 @@
 //! This module handles parsing the client's request into a simple to work with data structure
-//!
-//! missing query params though
 use std::{collections::HashMap, str::FromStr};
 
 use crate::method::HttpMethod;
@@ -14,6 +12,7 @@ pub struct Request {
     pub path: String,
     pub headers: HashMap<String, String>,
     pub body: Option<String>,
+    pub query: Option<HashMap<String, String>>,
 }
 
 impl FromStr for Request {
@@ -42,6 +41,17 @@ impl FromStr for Request {
                 ));
             }
         };
+        let (path, query): (String, Option<HashMap<String, String>>) = match path.split_once('?') {
+            Some((path, query)) => {
+                let query_map: HashMap<String, String> = query
+                    .split('&')
+                    .filter_map(|q| q.split_once('='))
+                    .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                    .collect();
+                (path.to_owned(), Some(query_map))
+            }
+            None => (path, None),
+        };
 
         let headers: HashMap<String, String> = s
             .lines()
@@ -66,6 +76,7 @@ impl FromStr for Request {
             path,
             headers,
             body,
+            query,
         };
         Ok(req)
     }
