@@ -9,12 +9,9 @@ use std::{
 
 use crate::{method::HttpMethod, request::Request, response::Response};
 
-type BoxedResponse = Box<dyn Response>;
-type Handler = Box<dyn HandlerFn + Send + Sync>;
-
 /// A generic trait to allow many different types of handlers to be passed into our http server
 pub trait HandlerFn: Send + Sync {
-    fn call(&self, req: Request) -> BoxedResponse;
+    fn call(&self, req: Request) -> Box<dyn Response>;
 }
 
 impl<F, T> HandlerFn for F
@@ -22,8 +19,8 @@ where
     F: Fn(Request) -> T + Send + Sync,
     T: Response + 'static,
 {
-    fn call(&self, req: Request) -> BoxedResponse {
-        Box::new(self(req))
+    fn call(&self, req: Request) -> Box<dyn Response> {
+        Box::new(self(req.into()))
     }
 }
 
@@ -36,7 +33,7 @@ where
 /// ```
 #[derive(Default)]
 pub struct HttpServer {
-    handlers: HashMap<(String, HttpMethod), Handler>,
+    handlers: HashMap<(String, HttpMethod), Box<dyn HandlerFn + Send + Sync>>,
     middle_ware: Option<fn(req: Request) -> Request>,
 }
 
@@ -248,11 +245,11 @@ impl HttpServer {
         };
         let path = request.path.clone();
         let method = request.method.clone();
-        let _write_success = if let Some(intercept) = server.handlers.get(&(path, method)) {
-            let ret = intercept.call(request);
-            stream.write_all(ret.to_response().into_bytes().as_slice())
+        if let Some(handler) = server.handlers.get(&(path, method)) {
+            let ret = handler.call(request);
+            stream.write_all(ret.to_response().into_bytes().as_slice())?
         } else {
-            stream.write_all(&"no method found".to_response().into_bytes())
+            stream.write_all(&"no method found".to_response().into_bytes())?
         };
         Ok(())
     }
