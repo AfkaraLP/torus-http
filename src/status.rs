@@ -1,15 +1,32 @@
 //! Http status wrapper
 use std::fmt::Display;
 
-// TODO: yeah fill this out should not take long but too lazy rn
 #[non_exhaustive]
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
 pub enum HttpStatus {
+    /// Status range 1xx - See `InformationalResponse` for more info
     Informational(InformationalResponse),
+    /// Status range 2xx - See `SuccessResponse` for more info
     Success(SuccessResponse),
+    /// Status range 3xx - See `RedirectionResponse` for more info
     Redirection(RedirectionResponse),
+    /// Status range 4xx - See `ClientErrorResponse` for more info
     ClientError(ClientErrorResponse),
+    /// Status range 5xx - See `ServerErrorResponse` for more info
     ServerError(ServerErrorResponse),
+}
+
+#[allow(unused)]
+impl HttpStatus {
+    pub const INTERNAL_SERVER_ERROR: Self =
+        Self::ServerError(ServerErrorResponse::InternalServerError);
+    pub const UNAUTHORIZED: Self = Self::ClientError(ClientErrorResponse::Unauthorized);
+    pub const NOT_FOUND: Self = Self::ClientError(ClientErrorResponse::NotFound);
+    pub const FORBIDDEN: Self = Self::ClientError(ClientErrorResponse::Forbidden);
+    pub const BAD_REQUEST: Self = Self::ClientError(ClientErrorResponse::BadRequest);
+    pub const TOO_MANY_REQUESTS: Self = Self::ClientError(ClientErrorResponse::TooManyRequests);
+    pub const OK: Self = Self::Success(SuccessResponse::OK);
+    pub const MOVED_PERMANENTLY: Self = Self::Redirection(RedirectionResponse::MovedPermanently);
 }
 
 impl Default for HttpStatus {
@@ -20,13 +37,20 @@ impl Default for HttpStatus {
 
 #[non_exhaustive]
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
+/// # Wikipedia:
+///
+/// an `InformationalResponse` (`1xx`) indicates that the request was received and understood and is being processed. It alerts the client to wait for a final response. The message does not contain a body. As the `HTTP/1.0` standard did not define any `1xx` status codes, servers must not send a `1xx` response to an `HTTP/1.0` compliant client except under experimental conditions.
 pub enum InformationalResponse {
+    /// Status 101
     SwitchingProtocols = 101,
     Processing = 102,
     EarlyHints = 103,
 }
 #[non_exhaustive]
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, Debug, Default)]
+/// # Wikipedia:
+///
+/// A `SuccessResponse` (`2xx`) indicates that the action requested by the client was received, understood, and accepted.
 pub enum SuccessResponse {
     #[default]
     OK = 200,
@@ -42,6 +66,9 @@ pub enum SuccessResponse {
 }
 #[non_exhaustive]
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
+/// # Wikipedia:
+///
+/// A `RedirectionResponse` (`3xx`) status indicates that the client must take additional action, generally URL redirection, to complete the request. A user agent may carry out the additional action with no user interaction if the method used in the additional request is `GET` or `HEAD`. A user agent should prevent cyclical redirects.
 pub enum RedirectionResponse {
     MultipleChoices = 300,
     MovedPermanently = 301,
@@ -55,6 +82,9 @@ pub enum RedirectionResponse {
 }
 #[non_exhaustive]
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
+/// # Wikipedia:
+///
+/// A `ClientErrorResponse` (`4xx`) status code is for situations in which an error seems to have been caused by the client. Except when responding to a `HEAD` request, the server should include an entity containing an explanation of the error situation, and whether it is a temporary or permanent condition. These status codes are applicable to any request method. User agents should display any included entity to the user.
 pub enum ClientErrorResponse {
     BadRequest = 400,
     Unauthorized = 401,
@@ -88,6 +118,9 @@ pub enum ClientErrorResponse {
 }
 #[non_exhaustive]
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
+/// # Wikipedia:
+///
+/// A `ServerErrorResponse` (`5xx`) status indicates that the server is aware that it has encountered an error or is otherwise incapable of performing the request. Except when responding to a `HEAD` request, the server should include an entity containing an explanation of the error situation, and indicate whether it is a temporary or permanent condition. Likewise, user agents should display any included entity to the user. These response codes are applicable to any request method.
 pub enum ServerErrorResponse {
     InternalServerError = 500,
     NotImplemented = 501,
