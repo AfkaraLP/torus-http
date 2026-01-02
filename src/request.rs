@@ -31,16 +31,14 @@ impl FromStr for Request {
             })?
             .split_whitespace();
 
-        let method_str = first_line.next().ok_or(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "invalid http top header",
-        ))?;
-
-        let path = first_line.next().ok_or(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "invalid http top header",
-        ))?;
-        // TODO: version string is ignored for now
+        let (Some(method_str), Some(path), Some(_version)) =
+            (first_line.next(), first_line.next(), first_line.next())
+        else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Invalid http top header",
+            ));
+        };
 
         let method = HttpMethod::from_str_val(method_str);
 
