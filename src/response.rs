@@ -10,16 +10,44 @@
 
 use std::collections::HashMap;
 
-use crate::status::HttpStatus;
+use crate::status::{HttpStatus, ServerErrorResponse};
 
 /// Trait that allows things to be sent back from the server
 pub trait Response {
     fn to_response(&self) -> HttpResponse;
 }
 
-impl<T: AsRef<str>> Response for T {
+impl Response for &str {
     fn to_response(&self) -> HttpResponse {
-        HttpResponse::new().set_body(self.as_ref())
+        HttpResponse::new_body((*self).to_string(), HttpStatus::default())
+    }
+}
+
+impl Response for String {
+    fn to_response(&self) -> HttpResponse {
+        HttpResponse::new_body(self.clone(), HttpStatus::default())
+    }
+}
+
+impl<S: Response> Response for Option<S> {
+    fn to_response(&self) -> HttpResponse {
+        match self {
+            Some(e) => e.to_response(),
+            None => HttpResponse::new().set_status(HttpStatus::ServerError(
+                ServerErrorResponse::InternalServerError,
+            )),
+        }
+    }
+}
+
+impl<S: Response, E: Response> Response for Result<S, E> {
+    fn to_response(&self) -> HttpResponse {
+        match self {
+            Ok(s) => s.to_response().set_status(HttpStatus::default()),
+            Err(e) => e
+                .to_response()
+                .set_status(ServerErrorResponse::InternalServerError.into()),
+        }
     }
 }
 
@@ -76,7 +104,7 @@ impl HttpResponse {
     pub fn new() -> Self {
         Self {
             headers: HashMap::new(),
-            status: HttpStatus::Ok,
+            status: HttpStatus::default(),
             body: None,
         }
     }

@@ -7,23 +7,25 @@ use std::{
     sync::Arc,
 };
 
-use crate::{method::HttpMethod, request::Request, response::Response};
+use crate::{method::HttpMethod, request::HttpRequest, response::Response};
 
 /// A generic trait to allow many different types of handlers to be passed into our http server
 pub trait HandlerFn: Send + Sync {
-    fn call(&self, req: Request) -> Box<dyn Response>;
+    fn call(&self, req: HttpRequest) -> Box<dyn Response>;
 }
 
 impl<F, T> HandlerFn for F
 where
-    F: Fn(Request) -> T + Send + Sync,
+    F: Fn(HttpRequest) -> T + Send + Sync,
     T: Response + 'static,
 {
-    fn call(&self, req: Request) -> Box<dyn Response> {
-        Box::new(self(req.into()))
+    fn call(&self, req: HttpRequest) -> Box<dyn Response> {
+        Box::new(self(req))
     }
 }
 
+pub type MiddleWareFn = fn(HttpRequest) -> HttpRequest;
+pub type Handler = Box<dyn HandlerFn + Send + Sync>;
 /// The struct to initialise your http server and finally listen on some port
 ///
 /// # Example usage:
@@ -33,8 +35,9 @@ where
 /// ```
 #[derive(Default)]
 pub struct HttpServer {
-    handlers: HashMap<(String, HttpMethod), Box<dyn HandlerFn + Send + Sync>>,
-    middle_ware: Option<fn(req: Request) -> Request>,
+    handlers: HashMap<(String, HttpMethod), Handler>,
+    middle_ware: Option<MiddleWareFn>,
+    state: Option<Box<dyn Send + Sync>>,
 }
 
 impl HttpServer {
@@ -44,6 +47,7 @@ impl HttpServer {
         Self {
             handlers: HashMap::new(),
             middle_ware: None,
+            state: None,
         }
     }
 
@@ -60,7 +64,7 @@ impl HttpServer {
     /// })
     /// ```
     #[must_use]
-    pub fn add_middleware(mut self, f: fn(req: Request) -> Request) -> Self {
+    pub fn add_middleware(mut self, f: fn(req: HttpRequest) -> HttpRequest) -> Self {
         self.middle_ware.replace(f);
         self
     }
@@ -206,6 +210,12 @@ impl HttpServer {
         self.route(path, HttpMethod::Options, f)
     }
 
+    #[must_use]
+    pub fn set_state<T: Send + Sync + 'static>(mut self, state: T) -> Self {
+        self.state.replace(Box::new(state));
+        self
+    }
+
     /// Start your http server
     ///
     /// # Errors
@@ -217,27 +227,31 @@ impl HttpServer {
     /// - Failed flushing to the stream
     pub fn listen(self, address: impl ToSocketAddrs) -> Result<(), ServerError> {
         let listener = TcpListener::bind(address)?;
-        let server = Arc::new(self);
+        let handlers = Arc::new(self.handlers);
+        let middle_ware = Arc::new(self.middle_ware);
         loop {
             for stream in listener.incoming() {
-                let server = server.clone();
                 let stream = stream?;
+                let middle_ware = middle_ware.clone();
+                let handlers = handlers.clone();
                 std::thread::spawn(move || {
-                    _ = Self::handle_connection(&server, stream);
+                    _ = Self::handle_connection(&handlers, &middle_ware, stream);
                 });
             }
         }
     }
 
     fn handle_connection(
-        server: &Arc<HttpServer>,
+        // server: &Arc<HttpServer<T>>,
+        handlers: &Arc<HashMap<(String, HttpMethod), Handler>>,
+        middle_ware: &Arc<Option<MiddleWareFn>>,
         mut stream: std::net::TcpStream,
     ) -> Result<(), ServerError> {
         let mut buf = [0; 4096 * 4];
         let n = stream.read(&mut buf)?;
         let request = {
-            let request = Request::from_str(from_utf8(&buf[..n])?)?;
-            if let Some(middle_ware) = server.middle_ware {
+            let request = HttpRequest::from_str(from_utf8(&buf[..n])?)?;
+            if let Some(middle_ware) = **middle_ware {
                 middle_ware(request)
             } else {
                 request
@@ -245,12 +259,12 @@ impl HttpServer {
         };
         let path = request.path.clone();
         let method = request.method.clone();
-        if let Some(handler) = server.handlers.get(&(path, method)) {
+        if let Some(handler) = handlers.get(&(path, method)) {
             let ret = handler.call(request);
-            stream.write_all(ret.to_response().into_bytes().as_slice())?
+            stream.write_all(ret.to_response().into_bytes().as_slice())?;
         } else {
-            stream.write_all(&"no method found".to_response().into_bytes())?
-        };
+            stream.write_all(&"no method found".to_response().into_bytes())?;
+        }
         Ok(())
     }
 }

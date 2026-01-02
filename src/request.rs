@@ -5,7 +5,7 @@ use crate::method::HttpMethod;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 /// The incoming request
-pub struct Request {
+pub struct HttpRequest {
     /// i.e. Get, Post, etc...
     pub method: HttpMethod,
     /// Hath, currently including query parameters in the string
@@ -16,7 +16,7 @@ pub struct Request {
     pub query: Option<HashMap<String, String>>,
 }
 
-impl FromStr for Request {
+impl FromStr for HttpRequest {
     type Err = std::io::Error;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
@@ -75,7 +75,7 @@ impl FromStr for Request {
 
         let path = path.to_owned();
 
-        let req: Request = Request {
+        let req: HttpRequest = HttpRequest {
             method,
             path,
             headers,
