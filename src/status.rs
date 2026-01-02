@@ -3,6 +3,9 @@ use std::fmt::Display;
 
 #[non_exhaustive]
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, Debug)]
+/// # Wikipedia:
+///
+/// The status code is a three-digit, decimal, integer value that represents the disposition of the server's attempt to satisfy the client's request. Generally, a client handles a response primarily based on the status code and secondarily on response header fields. A client may not understand each status code that a server reports but it must understand the class as indicated by the first digit and treat an unrecognized code as equivalent to the `x00` code of that class.
 pub enum HttpStatus {
     /// Status range 1xx - See `InformationalResponse` for more info
     Informational(InformationalResponse),
