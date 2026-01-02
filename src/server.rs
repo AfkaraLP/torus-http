@@ -4,7 +4,7 @@ use std::{
     io::{Read, Write},
     net::{TcpListener, ToSocketAddrs},
     str::{FromStr, Utf8Error, from_utf8},
-    sync::Arc,
+    sync::{Arc, mpsc},
 };
 
 use crate::{method::HttpMethod, request::HttpRequest, response::Response};
@@ -229,46 +229,45 @@ impl HttpServer {
         let listener = TcpListener::bind(address)?;
         let handlers = Arc::new(self.handlers);
         let middle_ware = Arc::new(self.middle_ware);
-        loop {
-            for stream in listener.incoming() {
-                let stream = stream?;
-                let middle_ware = middle_ware.clone();
-                let handlers = handlers.clone();
-                std::thread::spawn(move || {
-                    _ = Self::handle_connection(&handlers, &middle_ware, stream);
-                });
-            }
-        }
-    }
 
-    fn handle_connection(
-        // server: &Arc<HttpServer<T>>,
-        handlers: &Arc<HashMap<(String, HttpMethod), Handler>>,
-        middle_ware: &Arc<Option<MiddleWareFn>>,
-        mut stream: std::net::TcpStream,
-    ) -> Result<(), ServerError> {
-        let mut buf = [0; 4096 * 4];
-        let n = stream.read(&mut buf)?;
-        let request = {
-            let request = HttpRequest::from_str(from_utf8(&buf[..n])?)?;
-            if let Some(middle_ware) = **middle_ware {
-                middle_ware(request)
-            } else {
-                request
-            }
-        };
-        let path = request.path.clone();
-        let method = request.method.clone();
-        if let Some(handler) = handlers.get(&(path, method)) {
-            let ret = handler.call(request);
-            stream.write_all(ret.to_response().into_bytes().as_slice())?;
-        } else {
-            stream.write_all(&"no method found".to_response().into_bytes())?;
+        for stream in listener.incoming() {
+            let stream = stream?;
+            let middle_ware = middle_ware.clone();
+            let handlers = handlers.clone();
+
+            let job = move || _ = handle_connection(&handlers, &middle_ware, stream);
+            std::thread::spawn(job);
         }
         Ok(())
     }
 }
 
+fn handle_connection(
+    // server: &Arc<HttpServer<T>>,
+    handlers: &Arc<HashMap<(String, HttpMethod), Handler>>,
+    middle_ware: &Arc<Option<MiddleWareFn>>,
+    mut stream: std::net::TcpStream,
+) -> Result<(), ServerError> {
+    let mut buf = [0; 4096 * 4];
+    let n = stream.read(&mut buf)?;
+    let request = {
+        let request = HttpRequest::from_str(from_utf8(&buf[..n])?)?;
+        if let Some(middle_ware) = **middle_ware {
+            middle_ware(request)
+        } else {
+            request
+        }
+    };
+    let path = request.path.clone();
+    let method = request.method.clone();
+    if let Some(handler) = handlers.get(&(path, method)) {
+        let ret = handler.call(request);
+        stream.write_all(ret.to_response().into_bytes().as_slice())?;
+    } else {
+        stream.write_all(&"no method found".to_response().into_bytes())?;
+    }
+    Ok(())
+}
 #[derive(Debug)]
 pub enum ServerError {
     Utf8Conversion(Utf8Error),
