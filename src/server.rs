@@ -4,7 +4,7 @@ use std::{
     io::{Read, Write},
     net::{TcpListener, ToSocketAddrs},
     str::{FromStr, Utf8Error, from_utf8},
-    sync::{Arc, mpsc},
+    sync::Arc,
 };
 
 use crate::{method::HttpMethod, request::HttpRequest, response::Response};
