@@ -3,7 +3,8 @@
 //! # example:
 //!
 //! ```rust
-//! assert_eq!(HttpMethod::Get, HttpMethod::from_str("GET"));
+//! use torus_http::method::HttpMethod;
+//! assert_eq!(HttpMethod::Get, HttpMethod::from_str_val("GET"));
 //! ```
 //!
 //! ## Note!!!
@@ -11,7 +12,8 @@
 //! due to how it is written right now, you cannot get a custom overwrite for the method (TODO: rephrase this I apparently don't know english)
 //!
 //! ```rust
-//! assert_eq!(HttpMethod::Other("GET"), HttpMethod::from_str("GET")); // this does not hold
+//! use torus_http::method::HttpMethod;
+//! assert!(HttpMethod::other("GET") != HttpMethod::from_str_val("GET"));
 //! ```
 
 impl HttpMethod {
@@ -29,6 +31,12 @@ impl HttpMethod {
             "options" => HttpMethod::Options,
             other => HttpMethod::Other(other.to_string()),
         }
+    }
+
+    /// Generate a non standard `HttpMethod`
+    #[must_use]
+    pub fn other(s: impl Into<String>) -> Self {
+        Self::Other(s.into())
     }
 }
 

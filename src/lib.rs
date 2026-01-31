@@ -5,7 +5,7 @@
 //!
 //! ## Example usage:
 //!
-//! ```rust
+//! ```no_run
 //! use torus_http::prelude::*;
 //!
 //! fn main() {
@@ -13,7 +13,7 @@
 //!         .get("/", hello_world)
 //!         .route(
 //!             "/hello",
-//!             HttpMethod::Other("custom".into()),
+//!             HttpMethod::other("custom"),
 //!             |_| "hello from a custom method",
 //!         )
 //!         .add_middleware(|req| {
@@ -26,7 +26,7 @@
 //!         .expect("Failed listening...");
 //! }
 //!
-//! pub fn hello_world(req: Request) -> impl Response {
+//! pub fn hello_world(req: HttpRequest) -> impl Response {
 //!     HttpResponse::new()
 //!         .set_body(format!(
 //!             "<h1>hey there from torus!</h1><p>this is a test, your request is: {req:#?}</p>",

@@ -30,8 +30,9 @@ pub type Handler = Box<dyn HandlerFn + Send + Sync>;
 ///
 /// # Example usage:
 ///
-/// ```rust
-/// HttpServer::new().listen(("127.0.0.1", 8080)) // no_op http server listening on port 8080
+/// ```no_run
+/// use torus_http::server::HttpServer;
+/// HttpServer::new().listen(("127.0.0.1", 8080)); // no_op http server listening on port 8080
 /// ```
 #[derive(Default)]
 pub struct HttpServer {
@@ -58,10 +59,11 @@ impl HttpServer {
     /// # Example usage:
     ///
     /// ```rust
+    /// use torus_http::server::HttpServer;
     /// HttpServer::new().add_middleware(|req| {
     ///     println!("we got request: {req:#?}");
     ///     req
-    /// })
+    /// });
     /// ```
     #[must_use]
     pub fn add_middleware(mut self, f: fn(req: HttpRequest) -> HttpRequest) -> Self {
@@ -74,7 +76,9 @@ impl HttpServer {
     /// # Example usage:
     ///
     /// ```rust
-    /// HttpServer::new().route("/some_path", HttpMethod::Other("custom"), |_| {"hi"})
+    /// use torus_http::server::HttpServer;
+    /// use torus_http::method::HttpMethod;
+    /// HttpServer::new().route("/some_path", HttpMethod::other("custom"), |_| {"hi"});
     /// ```
     #[must_use]
     pub fn route<F: HandlerFn + 'static>(
@@ -92,10 +96,13 @@ impl HttpServer {
     /// # Example usage:
     ///
     /// ```rust
+    /// use torus_http::server::HttpServer;
+    /// use torus_http::request::HttpRequest;
+    /// use torus_http::response::Response;
     /// fn home_method(_req: HttpRequest) -> impl Response {
     ///     "hello, world"
     /// }
-    /// HttpServer::new().get("/home", )
+    /// HttpServer::new().get("/home", home_method);
     /// ```
     ///
     /// ## Note:
@@ -111,11 +118,14 @@ impl HttpServer {
     /// # Example usage:
     ///
     /// ```rust
+    /// use torus_http::server::HttpServer;
+    /// use torus_http::request::HttpRequest;
+    /// use torus_http::response::Response;
     /// fn my_post(_req: HttpRequest) -> impl Response {
     ///     // ... Super complex DB activity
     ///     "I'll keep you posted"
     /// }
-    /// HttpServer::new().post("/drop/prod/db", my_post)
+    /// HttpServer::new().post("/drop/prod/db", my_post);
     /// ```
     #[must_use]
     pub fn post<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
@@ -127,11 +137,14 @@ impl HttpServer {
     /// # Example usage:
     ///
     /// ```rust
+    /// use torus_http::server::HttpServer;
+    /// use torus_http::request::HttpRequest;
+    /// use torus_http::response::Response;
     /// fn my_delete(_req: HttpRequest) -> impl Response {
     ///     // delete browser history ...
     ///     "Yeah I don't use the internet bro trust me..."
     /// }
-    /// HttpServer::new().delete("/homework", my_delete)
+    /// HttpServer::new().delete("/homework", my_delete);
     /// ```
     #[must_use]
     pub fn delete<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
@@ -143,11 +156,14 @@ impl HttpServer {
     /// # Example usage:
     ///
     /// ```rust
+    /// use torus_http::server::HttpServer;
+    /// use torus_http::request::HttpRequest;
+    /// use torus_http::response::Response;
     /// fn im_getting_tired_of_writing_these(_req: HttpRequest) -> impl Response {
     ///     // just read the others like .get() and .post() bro
     ///     "Yeah I don't use the internet bro trust me..."
     /// }
-    /// HttpServer::new().delete("/homework", im_getting_tired_of_writing_these)
+    /// HttpServer::new().delete("/homework", im_getting_tired_of_writing_these);
     /// ```
     #[must_use]
     pub fn update<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
@@ -159,10 +175,13 @@ impl HttpServer {
     /// # Example usage:
     ///
     /// ```rust
+    /// use torus_http::request::HttpRequest;
+    /// use torus_http::server::HttpServer;
+    /// use torus_http::response::Response;
     /// fn im_getting_tired_of_writing_these(_req: HttpRequest) -> impl Response {
     ///     "WHY THE HECK DID I ADD SO MANY OF THESE THINGS"
     /// }
-    /// HttpServer::new().delete("/us-east1", im_getting_tired_of_writing_these)
+    /// HttpServer::new().delete("/us-east1", im_getting_tired_of_writing_these);
     /// ```
     #[must_use]
     pub fn put<F: HandlerFn + 'static>(self, path: impl Into<String>, f: F) -> Self {
@@ -192,6 +211,9 @@ impl HttpServer {
     /// # Example usage:
     ///
     /// ```rust
+    /// use torus_http::server::HttpServer;
+    /// use torus_http::request::HttpRequest;
+    /// use torus_http::response::Response;
     /// fn options_method(_req: HttpRequest) -> impl Response {
     ///     ""
     /// }

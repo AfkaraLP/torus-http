@@ -4,8 +4,9 @@
 //! # Example:
 //!
 //! ```rust
+//! use torus_http::response::{HttpResponse, Response};
 //! let response = HttpResponse::new().set_body("hey there").insert_header("Cool-Header", "so cool");
-//! let response = "hello".into_response();
+//! let response = "hello".to_response();
 //! ```
 
 use std::collections::HashMap;
