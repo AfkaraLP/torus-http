@@ -18,6 +18,7 @@ fn main() {
         .expect("Failed listening...");
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[must_use]
 pub fn hello_world(req: HttpRequest) -> impl Response {
     HttpResponse::new()
